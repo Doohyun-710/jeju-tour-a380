@@ -222,11 +222,12 @@
             game.plane.rotation.y += game.turnVel;
             game.plane.rotation.z = THREE.MathUtils.lerp(game.plane.rotation.z, game.turnVel * 25, 0.1);
 
-            const tPitch = game.keys.w ? -0.4 : (game.keys.s ? 0.4 : 0);
+            const tPitch = game.keys.w ? -0.55 : (game.keys.s ? 0.55 : 0);
             game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, tPitch, 0.08);
             game.plane.rotation.x = game.pitchVel;
 
             game.plane.translateZ(-game.vel * 4.5);
+            game.plane.position.y += (-game.pitchVel * game.vel * 1.5);
             
             if (frame % 6 === 0) checkHits();
 
