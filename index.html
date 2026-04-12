@@ -180,7 +180,7 @@
             if ('ontouchstart' in window) document.querySelectorAll('.mobile-ctrl').forEach(e => e.style.display = 'block');
             loader.load('korean_air.glb', (gltf) => {
                 game.model = gltf.scene;
-                game.model.scale.set(7, 7, 7);
+                game.model.scale.set(9, 9, 9);
                 game.model.rotation.y = Math.PI;
                 game.plane.add(game.model);
             });
