@@ -107,7 +107,7 @@
         const raycaster = new THREE.Raycaster();
 
         function getRandomPos() {
-            return new THREE.Vector3((Math.random()-0.5)*7000, 1300+Math.random()*700, -(Math.random()*8000+1000));
+            return new THREE.Vector3((Math.random()-0.5)*7000, 1700+Math.random()*700, -(Math.random()*8500+1000));
         }
         for (let i = 0; i < 3; i++) game.cpPos.push(getRandomPos());
         scene.add(game.plane);
