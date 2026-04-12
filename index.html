@@ -118,7 +118,7 @@
 
         // [수정] 산보다는 높지만 보일 정도의 높이 (1800~2800m)
         function getRandomPos() {
-            const h = 1800 + Math.random() * 1000; 
+            const h = 1400 + Math.random() * 1000; 
             const x = (Math.random() * 2000 + 3500) * (Math.random() > 0.5 ? 1 : -1); 
             const z = -(Math.random() * 3500 + 4000); 
             return new THREE.Vector3(x, h, z);
