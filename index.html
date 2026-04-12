@@ -220,13 +220,10 @@
             game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
             const tTurn = game.keys.a ? 0.035 : (game.keys.d ? -0.035 : 0);
             game.turnVel = THREE.MathUtils.lerp(game.turnVel, tTurn, 0.1);
-            game.plane.rotation.y += game.turnVel;
-            game.plane.rotation.z = THREE.MathUtils.lerp(game.plane.rotation.z, game.turnVel * 25, 0.1);
+            game.plane.rotateY(game.turnVel); // 핵심: rotateY 사용
             const tPitch = game.keys.w ? -0.55 : (game.keys.s ? 0.55 : 0);
             game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, tPitch, 0.08);
-            game.plane.rotation.x = game.pitchVel;
-            game.plane.translateZ(-game.vel * 4.5);
-            game.plane.position.y += (-game.pitchVel * game.vel * 1.5);
+            game.plane.rotateX(game.pitchVel); // 핵심: rotateX 사용
             if (frame % 6 === 0) checkHits();
             const target = game.cpPos[game.currentCP];
             const d = game.plane.position.distanceTo(target);
