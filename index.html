@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>성산일출봉 A380 투어링</title>
     <style>
-        /* UI 크기: 처음 주신 코드의 규격으로 원상복구 */
         body { margin: 0; overflow: hidden; background: #87CEEB; touch-action: none; font-family: sans-serif; position: fixed; width: 100%; height: 100%; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         #top-center { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
@@ -23,7 +22,16 @@
         #m-left { top: 52px; left: 0; } #m-right { top: 52px; right: 0; }
         .btn-boost { width: 90px; height: 90px; background: #ff4500; border: 4px solid #fff; border-radius: 50%; color: white; font-weight: bold; display: flex; justify-content: center; align-items: center; }
         #overlay { position: absolute; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; color:white; }
-        #loading-img { width: 260px; height: 260px; object-fit: cover; border-radius: 30px; margin-bottom: 25px; border: 4px solid #1e90ff; box-shadow: 0 0 25px rgba(30,144,255,0.5); display: block; }
+        #loading-img { 
+            width: 260px; 
+            height: 260px; 
+            object-fit: cover; 
+            border-radius: 30px; 
+            margin-bottom: 25px; 
+            border: 4px solid #1e90ff; 
+            box-shadow: 0 0 25px rgba(30,144,255,0.5);
+            display: block; 
+        }
         #start-btn { padding: 20px 60px; background: #1e90ff; color: white; border: none; border-radius: 50px; font-size: 22px; cursor: pointer; }
     </style>
 </head>
@@ -108,11 +116,11 @@
         const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _rayDir = new THREE.Vector3();
         const raycaster = new THREE.Raycaster();
 
-        // [요청사항 반영] 중앙 배제, 꼭짓점 배치, 높이 2.5배 상향
+        // [수정] 산보다는 높지만 보일 정도의 높이 (1800~2800m)
         function getRandomPos() {
-            const h = 4250 + Math.random() * 1000; // 높이 상향
-            const x = (Math.random() * 2000 + 4000) * (Math.random() > 0.5 ? 1 : -1); // 외곽 X
-            const z = -(Math.random() * 4000 + 4000); // 외곽 Z
+            const h = 1800 + Math.random() * 1000; 
+            const x = (Math.random() * 2000 + 3500) * (Math.random() > 0.5 ? 1 : -1); 
+            const z = -(Math.random() * 3500 + 4000); 
             return new THREE.Vector3(x, h, z);
         }
         for (let i = 0; i < 3; i++) game.cpPos.push(getRandomPos());
@@ -122,7 +130,7 @@
         loader.load('seongsan.glb', (gltf) => {
             game.mountain = gltf.scene;
             game.mountain.position.copy(game.mountainPos);
-            game.mountain.scale.set(135, 135, 135); // 맵크기 원상복구
+            game.mountain.scale.set(135, 135, 135); 
             scene.add(game.mountain);
             document.getElementById('loading-txt').style.display = 'none';
             document.getElementById('start-btn').style.display = 'block';
@@ -173,7 +181,7 @@
             if ('ontouchstart' in window) document.querySelectorAll('.mobile-ctrl').forEach(e => e.style.display = 'block');
             loader.load('korean_air.glb', (gltf) => {
                 game.model = gltf.scene;
-                game.model.scale.set(9, 9, 9); // 비행기 크기 원상복구
+                game.model.scale.set(9, 9, 9);
                 game.model.rotation.y = Math.PI;
                 game.plane.add(game.model);
             });
@@ -212,7 +220,6 @@
                 game.lastSec = sec;
             }
 
-            // 안정화된 조종 로직
             game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
             const tTurn = game.keys.a ? 0.035 : (game.keys.d ? -0.035 : 0);
             game.turnVel = THREE.MathUtils.lerp(game.turnVel, tTurn, 0.1);
