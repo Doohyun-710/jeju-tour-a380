@@ -123,7 +123,15 @@
         const raycaster = new THREE.Raycaster();
 
         function getRandomPos() {
-            return new THREE.Vector3((Math.random()-0.5)*12000, 5000+Math.random()*700, -(Math.random()*8500+1000));
+            // 1. 높이 수정: 기존 1700m의 2.5배인 약 4250m를 기준으로 설정
+            const height = 4250 + Math.random() * 1500; 
+        
+            // 2. 외곽 배치 로직: 중앙(0)을 피하고 양 끝값(-6000 또는 6000 근처)을 선택
+            // Math.random() > 0.5 ? 1 : -1 구문은 왼쪽 혹은 오른쪽 끝을 무작위로 결정합니다.
+            const x = (Math.random() * 2000 + 4000) * (Math.random() > 0.5 ? 1 : -1);
+            const z = -(Math.random() * 3000 + 6000); // 맵의 안쪽보다 먼 외곽 쪽에 배치
+        
+            return new THREE.Vector3(x, height, z);
         }
         for (let i = 0; i < 3; i++) game.cpPos.push(getRandomPos());
         scene.add(game.plane);
