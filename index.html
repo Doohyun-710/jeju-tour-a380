@@ -21,8 +21,9 @@
         #m-up { top: 0; left: 52px; } #m-down { bottom: 0; left: 52px; }
         #m-left { top: 52px; left: 0; } #m-right { top: 52px; right: 0; }
         .btn-boost { width: 90px; height: 90px; background: #ff4500; border: 4px solid #fff; border-radius: 50%; color: white; font-weight: bold; display: flex; justify-content: center; align-items: center; }
-        #overlay { position: absolute; width:100%; height:100%; background:rgba(0,0,0,0.9); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; color:white; }
-        #start-btn { padding: 20px 60px; background: #1e90ff; color: white; border: none; border-radius: 50px; font-size: 22px; cursor: pointer; }
+        
+        /* 오버레이 및 이미지 스타일 수정 */
+        #overlay { position: absolute; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; color:white; }
         #loading-img { 
             width: 260px; 
             height: 260px; 
@@ -30,15 +31,18 @@
             border-radius: 30px; 
             margin-bottom: 25px; 
             border: 4px solid #1e90ff; 
-            box-shadow: 0 0 25px rgba(30,144,255,0.5); 
-}
+            box-shadow: 0 0 25px rgba(30,144,255,0.5);
+            display: block; /* 명시적으로 표시 */
+        }
+        #start-btn { padding: 20px 60px; background: #1e90ff; color: white; border: none; border-radius: 50px; font-size: 22px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="overlay">
         <h1>성산일출봉 A380 투어링</h1>
-        <img src="flyjeju.png" id="loading-img"> <p id="loading-txt">맵 로딩 중...</p>
+        <img src="flyjeju.png" id="loading-img" alt="메인 이미지">
+        <p id="loading-txt">맵 로딩 중...</p>
         <button id="start-btn" style="display:none">비행 시작</button>
     </div>
 
@@ -86,12 +90,12 @@
 
         const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 모바일 렉 방지
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
         document.body.appendChild(renderer.domElement);
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 1, 20000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 1, 30000);
 
         scene.add(new THREE.AmbientLight(0xffffff, 1.2));
         const sun = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -111,7 +115,6 @@
             boundary: 15000, hitCool: 0
         };
 
-        // 재사용 벡터들 (메모리 절약)
         const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _rayDir = new THREE.Vector3();
         const raycaster = new THREE.Raycaster();
 
@@ -157,30 +160,24 @@
         function checkHits() {
             const now = Date.now();
             if (now < game.hitCool) return;
-
-            // 1. 지형 충돌 (Raycast)
             _rayDir.set(0,0,-1).applyQuaternion(game.plane.quaternion);
             raycaster.set(game.plane.position, _rayDir);
             raycaster.far = 180;
             const hits = game.mountain ? raycaster.intersectObject(game.mountain, true) : [];
-
-            // 2. 경계 및 고도 체크
             const distToCenter = game.plane.position.distanceTo(game.mountainPos);
             const tooLow = game.plane.position.y < -100;
-
             if (hits.length > 0 || distToCenter > game.boundary || tooLow) {
                 explode(game.plane.position);
                 game.hitCool = now + 1200;
-                game.vel = -3; // 튕겨나감
+                game.vel = -3; 
                 _v1.set(0, 0, 500).applyQuaternion(game.plane.quaternion);
-                game.plane.position.add(_v1); // 위치 강제 이동으로 끼임 방지
+                game.plane.position.add(_v1);
             }
         }
 
         document.getElementById('start-btn').onclick = () => {
             document.getElementById('overlay').style.display = 'none';
             if ('ontouchstart' in window) document.querySelectorAll('.mobile-ctrl').forEach(e => e.style.display = 'block');
-            
             loader.load('korean_air.glb', (gltf) => {
                 game.model = gltf.scene;
                 game.model.scale.set(5, 5, 5);
@@ -192,7 +189,6 @@
             game.startTime = Date.now();
         };
 
-        // 입력 리스너
         const handleKey = (e, val) => {
             const k = e.key.toLowerCase();
             if(k==='w') game.keys.w = val; if(k==='s') game.keys.s = val;
@@ -215,36 +211,26 @@
             requestAnimationFrame(animate);
             if (!game.started) return;
             frame++;
-
             const now = Date.now();
             const sec = Math.floor((now - game.startTime)/1000);
             if(game.lastSec !== sec) {
                 document.getElementById('timer-display').textContent = sec;
                 game.lastSec = sec;
             }
-
-            // 물리 및 이동
             game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
-            
             const tTurn = game.keys.a ? 0.035 : (game.keys.d ? -0.035 : 0);
             game.turnVel = THREE.MathUtils.lerp(game.turnVel, tTurn, 0.1);
             game.plane.rotation.y += game.turnVel;
             game.plane.rotation.z = THREE.MathUtils.lerp(game.plane.rotation.z, game.turnVel * 25, 0.1);
-
             const tPitch = game.keys.w ? -0.55 : (game.keys.s ? 0.55 : 0);
             game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, tPitch, 0.08);
             game.plane.rotation.x = game.pitchVel;
-
             game.plane.translateZ(-game.vel * 4.5);
             game.plane.position.y += (-game.pitchVel * game.vel * 1.5);
-            
             if (frame % 6 === 0) checkHits();
-
-            // 목표 및 UI
             const target = game.cpPos[game.currentCP];
             const d = game.plane.position.distanceTo(target);
             game.cpRings.forEach((r, i) => r.visible = (i === game.currentCP));
-
             if (d < 500) {
                 game.currentCP++;
                 if (game.currentCP >= 3) {
@@ -253,16 +239,12 @@
                     document.getElementById('result-screen').style.display = 'flex';
                 }
             }
-
-            // 화살표 로직 (내적/외적 없이 atan2로 단순화)
             _v1.subVectors(target, game.plane.position).normalize();
             _v2.set(0,0,-1).applyQuaternion(game.plane.quaternion);
             const angle = Math.atan2(_v1.x, _v1.z) - Math.atan2(_v2.x, _v2.z);
             document.getElementById('arrow-svg').style.transform = `rotate(${angle * 57.3}deg)`;
             document.getElementById('m-val').textContent = Math.round(d);
             document.getElementById('cp-num').textContent = `CP ${game.currentCP+1}/3`;
-
-            // 파티클
             for (let i = game.particles.length-1; i>=0; i--) {
                 const p = game.particles[i];
                 p.position.add(p.userData.v);
@@ -270,16 +252,12 @@
                 p.scale.setScalar(p.userData.life);
                 if (p.userData.life <= 0) { scene.remove(p); game.particles.splice(i,1); }
             }
-
-            // 카메라
             _v3.set(0, 65, 380).applyQuaternion(game.plane.quaternion).add(game.plane.position);
             camera.position.lerp(_v3, 0.08);
             camera.lookAt(game.plane.position);
-            
             renderer.render(scene, camera);
         }
         animate();
-
         window.onresize = () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
