@@ -6,14 +6,32 @@
     <title>성산일출봉 A380 투어링</title>
     <style>
         body { margin: 0; overflow: hidden; background: #87CEEB; touch-action: none; font-family: sans-serif; position: fixed; width: 100%; height: 100%; }
+        
+        /* UI 레이어: 화살표와 텍스트 크기 크게 유지 */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-        #top-center { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
-        #timer-display { background: rgba(0,0,0,0.8); color: #00ff00; padding: 5px 20px; border-radius: 10px; font-family: monospace; font-size: 24px; border: 2px solid #00ff00; margin-bottom: 8px; }
-        #nav-arrow-bg { width: 55px; height: 55px; background: rgba(0,0,0,0.6); border-radius: 50%; border: 2px solid #00d4ff; display: flex; justify-content: center; align-items: center; }
-        #dist-info { background: rgba(0,180,255,0.9); color: white; padding: 4px 15px; border-radius: 15px; font-weight: bold; margin-top: 5px; font-size: 14px; }
+        #top-center { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+        
+        /* 타이머 크기 큼직하게 */
+        #timer-display { background: rgba(0,0,0,0.8); color: #00ff00; padding: 10px 40px; border-radius: 15px; font-family: monospace; font-size: 40px; border: 3px solid #00ff00; margin-bottom: 15px; }
+        
+        /* 길찾기 화살표 배경 크게 */
+        #nav-arrow-bg { width: 100px; height: 100px; background: rgba(0,0,0,0.6); border-radius: 50%; border: 4px solid #00d4ff; display: flex; justify-content: center; align-items: center; }
+        #arrow-svg { width: 70px; height: 70px; } 
+        
+        /* 거리 정보 텍스트 크게 */
+        #dist-info { background: rgba(0,180,255,0.9); color: white; padding: 8px 25px; border-radius: 20px; font-weight: bold; margin-top: 10px; font-size: 22px; }
+        
         #result-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; color: white; text-align: center; pointer-events: auto; }
-        .retry-btn { padding: 20px 60px; background: #1e90ff; color: white; border: none; border-radius: 50px; font-size: 22px; font-weight: bold; cursor: pointer; margin-top: 30px; }
-        #status-panel { position: absolute; top: 20px; left: 20px; color: white; background: rgba(0,0,0,0.5); padding: 12px; border-radius: 10px; font-size: 14px; }
+        .retry-btn { padding: 25px 80px; background: #1e90ff; color: white; border: none; border-radius: 60px; font-size: 28px; font-weight: bold; cursor: pointer; margin-top: 30px; }
+        
+        #status-panel { position: absolute; top: 30px; left: 30px; color: white; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px; font-size: 20px; }
+        
+        /* 시작 화면(오버레이) 크게 보정 */
+        #overlay { position: absolute; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; color:white; }
+        #overlay h1 { font-size: 48px; margin-bottom: 30px; }
+        #loading-img { width: 400px; height: 400px; object-fit: cover; border-radius: 40px; margin-bottom: 35px; border: 6px solid #1e90ff; box-shadow: 0 0 40px rgba(30,144,255,0.6); display: block; }
+        #start-btn { padding: 30px 100px; background: #1e90ff; color: white; border: none; border-radius: 60px; font-size: 32px; font-weight: bold; cursor: pointer; }
+        
         .mobile-ctrl { position: absolute; bottom: 40px; pointer-events: auto; display: none; }
         #l-pad { left: 20px; width: 160px; height: 160px; }
         #r-pad { right: 30px; }
@@ -21,9 +39,6 @@
         #m-up { top: 0; left: 52px; } #m-down { bottom: 0; left: 52px; }
         #m-left { top: 52px; left: 0; } #m-right { top: 52px; right: 0; }
         .btn-boost { width: 90px; height: 90px; background: #ff4500; border: 4px solid #fff; border-radius: 50%; color: white; font-weight: bold; display: flex; justify-content: center; align-items: center; }
-        #overlay { position: absolute; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; color:white; }
-        #loading-img { width: 260px; height: 260px; object-fit: cover; border-radius: 30px; margin-bottom: 25px; border: 4px solid #1e90ff; box-shadow: 0 0 25px rgba(30,144,255,0.5); display: block; }
-        #start-btn { padding: 20px 60px; background: #1e90ff; color: white; border: none; border-radius: 50px; font-size: 22px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -36,8 +51,8 @@
     </div>
 
     <div id="result-screen">
-        <h1 style="font-size: 50px; color: #ffeb3b; margin: 0;">MISSION COMPLETE!</h1>
-        <p style="font-size: 24px; color: #fff; margin: 10px 0;">최종 기록: <span id="final-time" style="color:#00ff00">0</span>s</p>
+        <h1 style="font-size: 60px; color: #ffeb3b; margin: 0;">MISSION COMPLETE!</h1>
+        <p style="font-size: 32px; color: #fff; margin: 20px 0;">최종 기록: <span id="final-time" style="color:#00ff00">0</span>s</p>
         <button class="retry-btn" onclick="location.reload()">다시 비행하기</button>
     </div>
 
@@ -45,14 +60,14 @@
         <div id="top-center">
             <div id="timer-display">0</div>
             <div id="nav-arrow-bg">
-                <svg id="arrow-svg" width="35" height="35" viewBox="0 0 40 40">
+                <svg id="arrow-svg" viewBox="0 0 40 40">
                     <polygon points="20,5 35,35 20,25 5,35" fill="#00d4ff" />
                 </svg>
             </div>
             <div id="dist-info"><span id="m-val">0</span>m</div>
         </div>
         <div id="status-panel">
-            <b id="cp-num" style="color:#ffeb3b; font-size: 18px;">CP 1/3</b><br>
+            <b id="cp-num" style="color:#ffeb3b; font-size: 26px;">CP 1/3</b><br>
         </div>
     </div>
 
@@ -77,9 +92,9 @@
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+        renderer.setPixelRatio(window.devicePixelRatio); 
         document.body.appendChild(renderer.domElement);
 
         const scene = new THREE.Scene();
@@ -108,7 +123,7 @@
         const raycaster = new THREE.Raycaster();
 
         function getRandomPos() {
-            return new THREE.Vector3((Math.random()-0.5)*14000, 4000+Math.random()*2000, -(Math.random()*15000+2000));
+            return new THREE.Vector3((Math.random()-0.5)*7000, 1700+Math.random()*700, -(Math.random()*8500+1000));
         }
         for (let i = 0; i < 3; i++) game.cpPos.push(getRandomPos());
         scene.add(game.plane);
@@ -117,13 +132,13 @@
         loader.load('seongsan.glb', (gltf) => {
             game.mountain = gltf.scene;
             game.mountain.position.copy(game.mountainPos);
-            game.mountain.scale.set(270, 270, 270);
+            game.mountain.scale.set(135, 135, 135); // 원래 크기로 복구
             scene.add(game.mountain);
             document.getElementById('loading-txt').style.display = 'none';
             document.getElementById('start-btn').style.display = 'block';
         });
 
-        const ringGeo = new THREE.TorusGeometry(350, 20, 8, 20);
+        const ringGeo = new THREE.TorusGeometry(350, 20, 8, 20); // 원래 크기로 복구
         const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.6 });
         game.cpPos.forEach(pos => {
             const ring = new THREE.Mesh(ringGeo, ringMat);
@@ -153,9 +168,8 @@
             raycaster.set(game.plane.position, _rayDir);
             raycaster.far = 180;
             const hits = game.mountain ? raycaster.intersectObject(game.mountain, true) : [];
-            const distToCenter = game.plane.position.distanceTo(game.mountainPos);
             const tooLow = game.plane.position.y < -100;
-            if (hits.length > 0 || distToCenter > game.boundary || tooLow) {
+            if (hits.length > 0 || tooLow) {
                 explode(game.plane.position);
                 game.hitCool = now + 1200;
                 game.vel = -3; 
@@ -169,7 +183,7 @@
             if ('ontouchstart' in window) document.querySelectorAll('.mobile-ctrl').forEach(e => e.style.display = 'block');
             loader.load('korean_air.glb', (gltf) => {
                 game.model = gltf.scene;
-                game.model.scale.set(8, 8, 8);
+                game.model.scale.set(9, 9, 9); // 원래 크기로 복구
                 game.model.rotation.y = Math.PI;
                 game.plane.add(game.model);
             });
@@ -189,6 +203,7 @@
 
         const mBind = (id, k) => {
             const el = document.getElementById(id);
+            if(!el) return;
             el.ontouchstart = (e) => { e.preventDefault(); game.keys[k] = true; };
             el.ontouchend = (e) => { e.preventDefault(); game.keys[k] = false; };
         };
@@ -207,23 +222,17 @@
                 game.lastSec = sec;
             }
 
-            // [수정된 조종 로직: 절대 좌표 보정 방식]
+            // 속도 및 조종 안정화 로직
             game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
-
-            // 1. 좌우 회전 (Yaw) - 언제나 세상의 수직축(Y) 기준으로 회전하여 꼬임 방지
             const tTurn = game.keys.a ? 0.035 : (game.keys.d ? -0.035 : 0);
             game.turnVel = THREE.MathUtils.lerp(game.turnVel, tTurn, 0.1);
             game.plane.rotation.y += game.turnVel;
-
-            // 2. 상하 회전 (Pitch) - 값 대입 방식으로 복귀하되 최대 각도 제한
+            
             const tPitch = game.keys.w ? -0.6 : (game.keys.s ? 0.6 : 0);
             game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, tPitch, 0.08);
-            game.plane.rotation.x = game.pitchVel; // 직접 대입으로 수직 꼬임 원천 차단
-
-            // 3. 기우뚱 효과 (Roll) - 시각적인 효과만 부여
+            game.plane.rotation.x = game.pitchVel;
             game.plane.rotation.z = THREE.MathUtils.lerp(game.plane.rotation.z, game.turnVel * 20, 0.1);
 
-            // 4. 이동 계산 - 비행기가 보는 '앞방향' 벡터를 계산해서 이동
             _v1.set(0, 0, -1).applyQuaternion(game.plane.quaternion); 
             game.plane.position.addScaledVector(_v1, game.vel * 4.5);
 
@@ -231,6 +240,7 @@
             const target = game.cpPos[game.currentCP];
             const d = game.plane.position.distanceTo(target);
             game.cpRings.forEach((r, i) => r.visible = (i === game.currentCP));
+            
             if (d < 500) {
                 game.currentCP++;
                 if (game.currentCP >= 3) {
@@ -239,6 +249,7 @@
                     document.getElementById('result-screen').style.display = 'flex';
                 }
             }
+
             _v1.subVectors(target, game.plane.position).normalize();
             _v2.set(0,0,-1).applyQuaternion(game.plane.quaternion);
             const angle = Math.atan2(_v1.x, _v1.z) - Math.atan2(_v2.x, _v2.z);
@@ -254,7 +265,7 @@
                 if (p.userData.life <= 0) { scene.remove(p); game.particles.splice(i,1); }
             }
 
-            _v3.set(0, 65, 500).applyQuaternion(game.plane.quaternion).add(game.plane.position);
+            _v3.set(0, 65, 380).applyQuaternion(game.plane.quaternion).add(game.plane.position);
             camera.position.lerp(_v3, 0.08);
             camera.lookAt(game.plane.position);
             renderer.render(scene, camera);
