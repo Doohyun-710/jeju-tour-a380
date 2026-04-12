@@ -215,7 +215,7 @@
             }
 
             // 물리 및 이동
-            game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 16 : 8, 0.05);
+            game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
             
             const tTurn = game.keys.a ? 0.035 : (game.keys.d ? -0.035 : 0);
             game.turnVel = THREE.MathUtils.lerp(game.turnVel, tTurn, 0.1);
