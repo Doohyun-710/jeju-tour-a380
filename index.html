@@ -207,26 +207,25 @@
                 game.lastSec = sec;
             }
 
-            // [수정된 조종 로직]
+            // [수정된 조종 로직: 절대 좌표 보정 방식]
             game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
 
-            // 1. 좌우 회전 (비행기 자체의 수직축 기준)
-            const targetTurn = game.keys.a ? 0.03 : (game.keys.d ? -0.03 : 0);
-            game.turnVel = THREE.MathUtils.lerp(game.turnVel, targetTurn, 0.1);
-            game.plane.rotateY(game.turnVel); 
+            // 1. 좌우 회전 (Yaw) - 언제나 세상의 수직축(Y) 기준으로 회전하여 꼬임 방지
+            const tTurn = game.keys.a ? 0.035 : (game.keys.d ? -0.035 : 0);
+            game.turnVel = THREE.MathUtils.lerp(game.turnVel, tTurn, 0.1);
+            game.plane.rotation.y += game.turnVel;
 
-            // 2. 상하 회전 (비행기 자체의 날개축 기준)
-            const targetPitch = game.keys.w ? 0.02 : (game.keys.s ? -0.02 : 0);
-            game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, targetPitch, 0.1);
-            game.plane.rotateX(game.pitchVel);
+            // 2. 상하 회전 (Pitch) - 값 대입 방식으로 복귀하되 최대 각도 제한
+            const tPitch = game.keys.w ? -0.6 : (game.keys.s ? 0.6 : 0);
+            game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, tPitch, 0.08);
+            game.plane.rotation.x = game.pitchVel; // 직접 대입으로 수직 꼬임 원천 차단
 
-            // 3. 전진 (바라보는 방향으로 이동)
-            game.plane.translateZ(-game.vel * 4.5);
+            // 3. 기우뚱 효과 (Roll) - 시각적인 효과만 부여
+            game.plane.rotation.z = THREE.MathUtils.lerp(game.plane.rotation.z, game.turnVel * 20, 0.1);
 
-            // 시각적 기울기 (모델만 살짝 회전)
-            if (game.model) {
-                game.model.rotation.z = THREE.MathUtils.lerp(game.model.rotation.z, game.turnVel * 15, 0.1);
-            }
+            // 4. 이동 계산 - 비행기가 보는 '앞방향' 벡터를 계산해서 이동
+            _v1.set(0, 0, -1).applyQuaternion(game.plane.quaternion); 
+            game.plane.position.addScaledVector(_v1, game.vel * 4.5);
 
             if (frame % 6 === 0) checkHits();
             const target = game.cpPos[game.currentCP];
