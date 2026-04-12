@@ -12,9 +12,9 @@
         #nav-arrow-bg { width: 55px; height: 55px; background: rgba(0,0,0,0.6); border-radius: 50%; border: 2px solid #00d4ff; display: flex; justify-content: center; align-items: center; }
         #dist-info { background: rgba(0,180,255,0.9); color: white; padding: 4px 15px; border-radius: 15px; font-weight: bold; margin-top: 5px; font-size: 14px; }
         #result-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; color: white; text-align: center; pointer-events: auto; }
-        .retry-btn { padding: 20px 60px; background: #1e90ff; color: white; border: none; border-radius: 50px; font-size: 22px; font-weight: bold; cursor: pointer; margin-top: 30px; box-shadow: 0 0 20px rgba(30,144,255,0.5); }
+        .retry-btn { padding: 20px 60px; background: #1e90ff; color: white; border: none; border-radius: 50px; font-size: 22px; font-weight: bold; cursor: pointer; margin-top: 30px; }
         #status-panel { position: absolute; top: 20px; left: 20px; color: white; background: rgba(0,0,0,0.5); padding: 12px; border-radius: 10px; font-size: 14px; }
-        .mobile-ctrl { position: absolute; bottom: 40px; pointer-events: auto; display: block; } /* 테스트를 위해 block으로 변경 */
+        .mobile-ctrl { position: absolute; bottom: 40px; pointer-events: auto; display: none; }
         #l-pad { left: 20px; width: 160px; height: 160px; }
         #r-pad { right: 30px; }
         .btn-circle { width: 55px; height: 55px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; position: absolute; display: flex; justify-content: center; align-items: center; color: white; user-select: none; }
@@ -75,80 +75,55 @@
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-        const renderer = new THREE.WebGLRenderer({ 
-            antialias: false, 
-            powerPreference: "high-performance",
-            precision: "mediump"
-        });
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(1);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // 모바일 렉 방지
         document.body.appendChild(renderer.domElement);
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 1, 30000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 1, 20000);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-        const sun = new THREE.DirectionalLight(0xffffff, 1.2);
+        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+        const sun = new THREE.DirectionalLight(0xffffff, 1.0);
         sun.position.set(500, 2000, 500);
         scene.add(sun);
 
         const game = {
             started: false, startTime: 0, lastSec: -1,
             plane: new THREE.Group(),
+            model: null,
+            mountain: null,
             vel: 0, turnVel: 0, pitchVel: 0,
             keys: { w:false, a:false, s:false, d:false, space:false },
             particles: [],
             mountainPos: new THREE.Vector3(0, -300, -4500),
             cpPos: [], cpRings: [], currentCP: 0,
-            boundary: 8000,
-            hitCool: 0 // 수정됨: 객체 내부에 올바르게 정의
+            boundary: 8500, hitCool: 0
         };
 
-        const _v1 = new THREE.Vector3();
-        const _v2 = new THREE.Vector3();
-        const _v3 = new THREE.Vector3();
-        const _rayDir = new THREE.Vector3();
+        // 재사용 벡터들 (메모리 절약)
+        const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _rayDir = new THREE.Vector3();
+        const raycaster = new THREE.Raycaster();
 
         function getRandomPos() {
-            return new THREE.Vector3(
-                (Math.random() - 0.5) * 6000,
-                1200 + Math.random() * 800,
-                -(Math.random() * 7000 + 1000)
-            );
+            return new THREE.Vector3((Math.random()-0.5)*7000, 1300+Math.random()*700, -(Math.random()*8000+1000));
         }
-
-        for (let i = 0; i < 3; i++) { game.cpPos.push(getRandomPos()); }
+        for (let i = 0; i < 3; i++) game.cpPos.push(getRandomPos());
         scene.add(game.plane);
 
         const loader = new GLTFLoader();
-        
-        // 지형 로드 (실패 시에도 게임 진행 가능하게 처리)
-        loader.load('seongsan.glb', 
-            (gltf) => {
-                const m = gltf.scene;
-                m.position.copy(game.mountainPos);
-                m.scale.set(135, 135, 135);
-                scene.add(m);
-                readyToStart();
-            },
-            undefined,
-            (err) => {
-                console.warn("지형 파일 없음 - 임시 바닥 생성");
-                const ground = new THREE.Mesh(new THREE.BoxGeometry(10000, 10, 10000), new THREE.MeshBasicMaterial({color: 0x33aa33}));
-                ground.position.y = -500;
-                scene.add(ground);
-                readyToStart();
-            }
-        );
-
-        function readyToStart() {
+        loader.load('seongsan.glb', (gltf) => {
+            game.mountain = gltf.scene;
+            game.mountain.position.copy(game.mountainPos);
+            game.mountain.scale.set(135, 135, 135);
+            scene.add(game.mountain);
             document.getElementById('loading-txt').style.display = 'none';
             document.getElementById('start-btn').style.display = 'block';
-        }
+        });
 
-        const ringGeo = new THREE.TorusGeometry(350, 25, 8, 24);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.8 });
+        const ringGeo = new THREE.TorusGeometry(350, 20, 8, 20);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.6 });
         game.cpPos.forEach(pos => {
             const ring = new THREE.Mesh(ringGeo, ringMat);
             ring.position.copy(pos);
@@ -158,146 +133,139 @@
         });
 
         function explode(pos) {
-            const pGeo = new THREE.BoxGeometry(20, 20, 20);
+            const pGeo = new THREE.BoxGeometry(20,20,20);
             const pMat = new THREE.MeshBasicMaterial({color: 0xff4400});
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; i < 6; i++) {
                 const p = new THREE.Mesh(pGeo, pMat);
                 p.position.copy(pos);
-                p.userData.v = new THREE.Vector3((Math.random()-0.5)*50, (Math.random()-0.5)*50, (Math.random()-0.5)*50);
+                p.userData.v = new THREE.Vector3((Math.random()-0.5)*40, (Math.random()-0.5)*40, (Math.random()-0.5)*40);
                 p.userData.life = 1.0;
                 scene.add(p);
                 game.particles.push(p);
             }
         }
 
-        const raycaster = new THREE.Raycaster();
         function checkHits() {
             const now = Date.now();
             if (now < game.hitCool) return;
 
+            // 1. 지형 충돌 (Raycast)
             _rayDir.set(0,0,-1).applyQuaternion(game.plane.quaternion);
             raycaster.set(game.plane.position, _rayDir);
-            const hits = raycaster.intersectObjects(scene.children, true);
-            
-            const distToMountain = game.plane.position.distanceTo(game.mountainPos);
-            const isMHit = hits.length > 0 && hits.find(h => h.object.type !== 'TorusGeometry' && h.distance < 150);
+            raycaster.far = 180;
+            const hits = game.mountain ? raycaster.intersectObject(game.mountain, true) : [];
 
-            if (isMHit || distToMountain > game.boundary) {
+            // 2. 경계 및 고도 체크
+            const distToCenter = game.plane.position.distanceTo(game.mountainPos);
+            const tooLow = game.plane.position.y < -100;
+
+            if (hits.length > 0 || distToCenter > game.boundary || tooLow) {
                 explode(game.plane.position);
-                game.hitCool = now + 1500;
-                const back = _v1.set(0,0,1).applyQuaternion(game.plane.quaternion);
-                game.plane.position.addScaledVector(back, 300);
-                game.vel = -2;
+                game.hitCool = now + 1200;
+                game.vel = -3; // 튕겨나감
+                _v1.set(0, 0, 500).applyQuaternion(game.plane.quaternion);
+                game.plane.position.add(_v1); // 위치 강제 이동으로 끼임 방지
             }
         }
 
         document.getElementById('start-btn').onclick = () => {
             document.getElementById('overlay').style.display = 'none';
+            if ('ontouchstart' in window) document.querySelectorAll('.mobile-ctrl').forEach(e => e.style.display = 'block');
             
-            loader.load('korean_air.glb', 
-                (gltf) => {
-                    const m = gltf.scene; m.scale.set(5, 5, 5); m.rotation.y = Math.PI;
-                    game.plane.add(m);
-                },
-                undefined,
-                (err) => {
-                    console.warn("비행기 파일 없음 - 임시 비행체 생성");
-                    const body = new THREE.Mesh(new THREE.BoxGeometry(50, 20, 100), new THREE.MeshBasicMaterial({color: 0xffffff}));
-                    game.plane.add(body);
-                }
-            );
-            
-            game.plane.position.set(0, 1600, 1000);
+            loader.load('korean_air.glb', (gltf) => {
+                game.model = gltf.scene;
+                game.model.scale.set(5, 5, 5);
+                game.model.rotation.y = Math.PI;
+                game.plane.add(game.model);
+            });
+            game.plane.position.set(0, 1600, 1500);
             game.started = true;
             game.startTime = Date.now();
         };
 
-        window.onkeydown = (e) => {
+        // 입력 리스너
+        const handleKey = (e, val) => {
             const k = e.key.toLowerCase();
-            if(k==='w') game.keys.w = true; if(k==='s') game.keys.s = true;
-            if(k==='a') game.keys.a = true; if(k==='d') game.keys.d = true;
-            if(e.code==='Space') game.keys.space = true;
+            if(k==='w') game.keys.w = val; if(k==='s') game.keys.s = val;
+            if(k==='a') game.keys.a = val; if(k==='d') game.keys.d = val;
+            if(e.code==='Space') game.keys.space = val;
         };
-        window.onkeyup = (e) => {
-            const k = e.key.toLowerCase();
-            if(k==='w') game.keys.w = false; if(k==='s') game.keys.s = false;
-            if(k==='a') game.keys.a = false; if(k==='d') game.keys.d = false;
-            if(e.code==='Space') game.keys.space = false;
-        };
+        window.onkeydown = (e) => handleKey(e, true);
+        window.onkeyup = (e) => handleKey(e, false);
 
         const mBind = (id, k) => {
             const el = document.getElementById(id);
-            el.addEventListener('touchstart', (e) => { e.preventDefault(); game.keys[k] = true; }, {passive: false});
-            el.addEventListener('touchend', (e) => { e.preventDefault(); game.keys[k] = false; }, {passive: false});
+            el.ontouchstart = (e) => { e.preventDefault(); game.keys[k] = true; };
+            el.ontouchend = (e) => { e.preventDefault(); game.keys[k] = false; };
         };
         mBind('m-up', 'w'); mBind('m-down', 's'); mBind('m-left', 'a'); mBind('m-right', 'd');
         mBind('m-boost', 'space');
 
-        let frameCount = 0;
+        let frame = 0;
         function animate() {
             requestAnimationFrame(animate);
             if (!game.started) return;
+            frame++;
 
-            frameCount++;
             const now = Date.now();
-            const currentSec = Math.floor((now - game.startTime) / 1000);
-            
-            if (game.lastSec !== currentSec) {
-                document.getElementById('timer-display').textContent = currentSec;
-                game.lastSec = currentSec;
+            const sec = Math.floor((now - game.startTime)/1000);
+            if(game.lastSec !== sec) {
+                document.getElementById('timer-display').textContent = sec;
+                game.lastSec = sec;
             }
 
-            game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
+            // 물리 및 이동
+            game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 16 : 8, 0.05);
             
-            let tTurn = 0;
-            if (game.keys.a) tTurn = 0.035; else if (game.keys.d) tTurn = -0.035;
+            const tTurn = game.keys.a ? 0.035 : (game.keys.d ? -0.035 : 0);
             game.turnVel = THREE.MathUtils.lerp(game.turnVel, tTurn, 0.1);
             game.plane.rotation.y += game.turnVel;
-            game.plane.rotation.z = THREE.MathUtils.lerp(game.plane.rotation.z, game.turnVel * 30, 0.1);
+            game.plane.rotation.z = THREE.MathUtils.lerp(game.plane.rotation.z, game.turnVel * 25, 0.1);
 
-            let tPitch = 0;
-            if (game.keys.w) tPitch = -0.4; else if (game.keys.s) tPitch = 0.4;
-            game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, tPitch, 0.1);
+            const tPitch = game.keys.w ? -0.4 : (game.keys.s ? 0.4 : 0);
+            game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, tPitch, 0.08);
             game.plane.rotation.x = game.pitchVel;
 
-            game.plane.translateZ(-game.vel * 4);
+            game.plane.translateZ(-game.vel * 4.5);
             
-            // 5프레임마다 충돌 체크 (성능 확보)
-            if (frameCount % 5 === 0) checkHits();
+            if (frame % 6 === 0) checkHits();
 
+            // 목표 및 UI
             const target = game.cpPos[game.currentCP];
             const d = game.plane.position.distanceTo(target);
-            
             game.cpRings.forEach((r, i) => r.visible = (i === game.currentCP));
 
             if (d < 500) {
                 game.currentCP++;
                 if (game.currentCP >= 3) {
                     game.started = false;
-                    document.getElementById('final-time').textContent = currentSec;
+                    document.getElementById('final-time').textContent = sec;
                     document.getElementById('result-screen').style.display = 'flex';
                 }
             }
 
+            // 화살표 로직 (내적/외적 없이 atan2로 단순화)
             _v1.subVectors(target, game.plane.position).normalize();
             _v2.set(0,0,-1).applyQuaternion(game.plane.quaternion);
-            const ang = Math.atan2(_v1.x, _v1.z) - Math.atan2(_v2.x, _v2.z);
-            document.getElementById('arrow-svg').style.transform = `rotate(${ang * 57.3}deg)`;
+            const angle = Math.atan2(_v1.x, _v1.z) - Math.atan2(_v2.x, _v2.z);
+            document.getElementById('arrow-svg').style.transform = `rotate(${angle * 57.3}deg)`;
             document.getElementById('m-val').textContent = Math.round(d);
             document.getElementById('cp-num').textContent = `CP ${game.currentCP+1}/3`;
 
+            // 파티클
             for (let i = game.particles.length-1; i>=0; i--) {
                 const p = game.particles[i];
                 p.position.add(p.userData.v);
-                p.userData.v.y -= 0.5;
                 p.userData.life -= 0.02;
                 p.scale.setScalar(p.userData.life);
-                if (p.userData.life <= 0) { scene.remove(p); game.particles.splice(i, 1); }
+                if (p.userData.life <= 0) { scene.remove(p); game.particles.splice(i,1); }
             }
 
-            _v3.set(0, 60, 350).applyQuaternion(game.plane.quaternion).add(game.plane.position);
-            camera.position.lerp(_v3, 0.1);
+            // 카메라
+            _v3.set(0, 65, 380).applyQuaternion(game.plane.quaternion).add(game.plane.position);
+            camera.position.lerp(_v3, 0.08);
             camera.lookAt(game.plane.position);
+            
             renderer.render(scene, camera);
         }
         animate();
