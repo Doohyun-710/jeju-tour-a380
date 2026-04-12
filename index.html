@@ -1,273 +1,268 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>성산일출봉 A380 투어링</title>
-    <style>
-        body { margin: 0; overflow: hidden; background: #87CEEB; touch-action: none; font-family: sans-serif; position: fixed; width: 100%; height: 100%; }
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-        #top-center { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
-        #timer-display { background: rgba(0,0,0,0.8); color: #00ff00; padding: 5px 20px; border-radius: 10px; font-family: monospace; font-size: 24px; border: 2px solid #00ff00; margin-bottom: 8px; }
-        #nav-arrow-bg { width: 55px; height: 55px; background: rgba(0,0,0,0.6); border-radius: 50%; border: 2px solid #00d4ff; display: flex; justify-content: center; align-items: center; }
-        #dist-info { background: rgba(0,180,255,0.9); color: white; padding: 4px 15px; border-radius: 15px; font-weight: bold; margin-top: 5px; font-size: 14px; }
-        #result-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; color: white; text-align: center; pointer-events: auto; }
-        .retry-btn { padding: 20px 60px; background: #1e90ff; color: white; border: none; border-radius: 50px; font-size: 22px; font-weight: bold; cursor: pointer; margin-top: 30px; }
-        #status-panel { position: absolute; top: 20px; left: 20px; color: white; background: rgba(0,0,0,0.5); padding: 12px; border-radius: 10px; font-size: 14px; }
-        .mobile-ctrl { position: absolute; bottom: 40px; pointer-events: auto; display: none; }
-        #l-pad { left: 20px; width: 160px; height: 160px; }
-        #r-pad { right: 30px; }
-        .btn-circle { width: 55px; height: 55px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; position: absolute; display: flex; justify-content: center; align-items: center; color: white; user-select: none; }
-        #m-up { top: 0; left: 52px; } #m-down { bottom: 0; left: 52px; }
-        #m-left { top: 52px; left: 0; } #m-right { top: 52px; right: 0; }
-        .btn-boost { width: 90px; height: 90px; background: #ff4500; border: 4px solid #fff; border-radius: 50%; color: white; font-weight: bold; display: flex; justify-content: center; align-items: center; }
-        #overlay { position: absolute; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; color:white; }
-        #loading-img { width: 260px; height: 260px; object-fit: cover; border-radius: 30px; margin-bottom: 25px; border: 4px solid #1e90ff; box-shadow: 0 0 25px rgba(30,144,255,0.5); display: block; }
-        #start-btn { padding: 20px 60px; background: #1e90ff; color: white; border: none; border-radius: 50px; font-size: 22px; cursor: pointer; }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>성산일출봉 A380 투어링</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #87CEEB; touch-action: none; font-family: sans-serif; position: fixed; width: 100%; height: 100%; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        #top-center { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+        #timer-display { background: rgba(0,0,0,0.8); color: #00ff00; padding: 5px 20px; border-radius: 10px; font-family: monospace; font-size: 24px; border: 2px solid #00ff00; margin-bottom: 8px; }
+        #nav-arrow-bg { width: 55px; height: 55px; background: rgba(0,0,0,0.6); border-radius: 50%; border: 2px solid #00d4ff; display: flex; justify-content: center; align-items: center; }
+        #dist-info { background: rgba(0,180,255,0.9); color: white; padding: 4px 15px; border-radius: 15px; font-weight: bold; margin-top: 5px; font-size: 14px; }
+        #result-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; color: white; text-align: center; pointer-events: auto; }
+        .retry-btn { padding: 20px 60px; background: #1e90ff; color: white; border: none; border-radius: 50px; font-size: 22px; font-weight: bold; cursor: pointer; margin-top: 30px; }
+        #status-panel { position: absolute; top: 20px; left: 20px; color: white; background: rgba(0,0,0,0.5); padding: 12px; border-radius: 10px; font-size: 14px; }
+        .mobile-ctrl { position: absolute; bottom: 40px; pointer-events: auto; display: none; }
+        #l-pad { left: 20px; width: 160px; height: 160px; }
+        #r-pad { right: 30px; }
+        .btn-circle { width: 55px; height: 55px; background: rgba(255,255,255,0.2); border: 2px solid #fff; border-radius: 50%; position: absolute; display: flex; justify-content: center; align-items: center; color: white; user-select: none; }
+        #m-up { top: 0; left: 52px; } #m-down { bottom: 0; left: 52px; }
+        #m-left { top: 52px; left: 0; } #m-right { top: 52px; right: 0; }
+        .btn-boost { width: 90px; height: 90px; background: #ff4500; border: 4px solid #fff; border-radius: 50%; color: white; font-weight: bold; display: flex; justify-content: center; align-items: center; }
+        
+        /* 오버레이 및 이미지 스타일 수정 */
+        #overlay { position: absolute; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; color:white; }
+        #loading-img { 
+            width: 260px; 
+            height: 260px; 
+            object-fit: cover; 
+            border-radius: 30px; 
+            margin-bottom: 25px; 
+            border: 4px solid #1e90ff; 
+            box-shadow: 0 0 25px rgba(30,144,255,0.5);
+            display: block; /* 명시적으로 표시 */
+        }
+        #start-btn { padding: 20px 60px; background: #1e90ff; color: white; border: none; border-radius: 50px; font-size: 22px; cursor: pointer; }
+    </style>
 </head>
 <body>
 
-    <div id="overlay">
-        <h1>성산일출봉 A380 투어링</h1>
-        <img src="flyjeju.png" id="loading-img" alt="메인 이미지">
-        <p id="loading-txt">맵 로딩 중...</p>
-        <button id="start-btn" style="display:none">비행 시작</button>
-    </div>
+    <div id="overlay">
+        <h1>성산일출봉 A380 투어링</h1>
+        <img src="flyjeju.png" id="loading-img" alt="메인 이미지">
+        <p id="loading-txt">맵 로딩 중...</p>
+        <button id="start-btn" style="display:none">비행 시작</button>
+    </div>
 
-    <div id="result-screen">
-        <h1 style="font-size: 50px; color: #ffeb3b; margin: 0;">MISSION COMPLETE!</h1>
-        <p style="font-size: 24px; color: #fff; margin: 10px 0;">최종 기록: <span id="final-time" style="color:#00ff00">0</span>s</p>
-        <button class="retry-btn" onclick="location.reload()">다시 비행하기</button>
-    </div>
+    <div id="result-screen">
+        <h1 style="font-size: 50px; color: #ffeb3b; margin: 0;">MISSION COMPLETE!</h1>
+        <p style="font-size: 24px; color: #fff; margin: 10px 0;">최종 기록: <span id="final-time" style="color:#00ff00">0</span>s</p>
+        <button class="retry-btn" onclick="location.reload()">다시 비행하기</button>
+    </div>
 
-    <div id="ui-layer">
-        <div id="top-center">
-            <div id="timer-display">0</div>
-            <div id="nav-arrow-bg">
-                <svg id="arrow-svg" width="35" height="35" viewBox="0 0 40 40">
-                    <polygon points="20,5 35,35 20,25 5,35" fill="#00d4ff" />
-                </svg>
-            </div>
-            <div id="dist-info"><span id="m-val">0</span>m</div>
-        </div>
-        <div id="status-panel">
-            <b id="cp-num" style="color:#ffeb3b; font-size: 18px;">CP 1/3</b><br>
-        </div>
-    </div>
+    <div id="ui-layer">
+        <div id="top-center">
+            <div id="timer-display">0</div>
+            <div id="nav-arrow-bg">
+                <svg id="arrow-svg" width="35" height="35" viewBox="0 0 40 40">
+                    <polygon points="20,5 35,35 20,25 5,35" fill="#00d4ff" />
+                </svg>
+            </div>
+            <div id="dist-info"><span id="m-val">0</span>m</div>
+        </div>
+        <div id="status-panel">
+            <b id="cp-num" style="color:#ffeb3b; font-size: 18px;">CP 1/3</b><br>
+        </div>
+    </div>
 
-    <div id="l-pad" class="mobile-ctrl">
-        <div id="m-up" class="btn-circle">▲</div><div id="m-down" class="btn-circle">▼</div>
-        <div id="m-left" class="btn-circle">◀</div><div id="m-right" class="btn-circle">▶</div>
-    </div>
-    <div id="r-pad" class="mobile-ctrl">
-        <div id="m-boost" class="btn-boost">THRUST</div>
-    </div>
+    <div id="l-pad" class="mobile-ctrl">
+        <div id="m-up" class="btn-circle">▲</div><div id="m-down" class="btn-circle">▼</div>
+        <div id="m-left" class="btn-circle">◀</div><div id="m-right" class="btn-circle">▶</div>
+    </div>
+    <div id="r-pad" class="mobile-ctrl">
+        <div id="m-boost" class="btn-boost">THRUST</div>
+    </div>
 
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-        }
-    }
-    </script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
-        document.body.appendChild(renderer.domElement);
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+        document.body.appendChild(renderer.domElement);
 
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB);
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 1, 30000);
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 1, 30000);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
-        const sun = new THREE.DirectionalLight(0xffffff, 1.0);
-        sun.position.set(500, 2000, 500);
-        scene.add(sun);
+        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+        const sun = new THREE.DirectionalLight(0xffffff, 1.0);
+        sun.position.set(500, 2000, 500);
+        scene.add(sun);
 
-        const game = {
-            started: false, startTime: 0, lastSec: -1,
-            plane: new THREE.Group(),
-            model: null,
-            mountain: null,
-            vel: 0, turnVel: 0, pitchVel: 0,
-            keys: { w:false, a:false, s:false, d:false, space:false },
-            particles: [],
-            mountainPos: new THREE.Vector3(0, -300, -4500),
-            cpPos: [], cpRings: [], currentCP: 0,
-            boundary: 15000, hitCool: 0
-        };
+        const game = {
+            started: false, startTime: 0, lastSec: -1,
+            plane: new THREE.Group(),
+            model: null,
+            mountain: null,
+            vel: 0, turnVel: 0, pitchVel: 0,
+            keys: { w:false, a:false, s:false, d:false, space:false },
+            particles: [],
+            mountainPos: new THREE.Vector3(0, -300, -4500),
+            cpPos: [], cpRings: [], currentCP: 0,
+            boundary: 15000, hitCool: 0
+        };
 
-        const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _rayDir = new THREE.Vector3();
-        const raycaster = new THREE.Raycaster();
+        const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _rayDir = new THREE.Vector3();
+        const raycaster = new THREE.Raycaster();
 
-        function getRandomPos() {
-            return new THREE.Vector3((Math.random()-0.5)*7000, 1700+Math.random()*700, -(Math.random()*8500+1000));
-        }
-        for (let i = 0; i < 3; i++) game.cpPos.push(getRandomPos());
-        scene.add(game.plane);
+        function getRandomPos() {
+            return new THREE.Vector3((Math.random()-0.5)*7000, 1700+Math.random()*700, -(Math.random()*8500+1000));
+        }
+        for (let i = 0; i < 3; i++) game.cpPos.push(getRandomPos());
+        scene.add(game.plane);
 
-        const loader = new GLTFLoader();
-        loader.load('seongsan.glb', (gltf) => {
-            game.mountain = gltf.scene;
-            game.mountain.position.copy(game.mountainPos);
-            game.mountain.scale.set(135, 135, 135);
-            scene.add(game.mountain);
-            document.getElementById('loading-txt').style.display = 'none';
-            document.getElementById('start-btn').style.display = 'block';
-        });
+        const loader = new GLTFLoader();
+        loader.load('seongsan.glb', (gltf) => {
+            game.mountain = gltf.scene;
+            game.mountain.position.copy(game.mountainPos);
+            game.mountain.scale.set(135, 135, 135);
+            scene.add(game.mountain);
+            document.getElementById('loading-txt').style.display = 'none';
+            document.getElementById('start-btn').style.display = 'block';
+        });
 
-        const ringGeo = new THREE.TorusGeometry(350, 20, 8, 20);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.6 });
-        game.cpPos.forEach(pos => {
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.position.copy(pos);
-            ring.visible = false;
-            scene.add(ring);
-            game.cpRings.push(ring);
-        });
+        const ringGeo = new THREE.TorusGeometry(350, 20, 8, 20);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.6 });
+        game.cpPos.forEach(pos => {
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.position.copy(pos);
+            ring.visible = false;
+            scene.add(ring);
+            game.cpRings.push(ring);
+        });
 
-        function explode(pos) {
-            const pGeo = new THREE.BoxGeometry(20,20,20);
-            const pMat = new THREE.MeshBasicMaterial({color: 0xff4400});
-            for (let i = 0; i < 6; i++) {
-                const p = new THREE.Mesh(pGeo, pMat);
-                p.position.copy(pos);
-                p.userData.v = new THREE.Vector3((Math.random()-0.5)*40, (Math.random()-0.5)*40, (Math.random()-0.5)*40);
-                p.userData.life = 1.0;
-                scene.add(p);
-                game.particles.push(p);
-            }
-        }
+        function explode(pos) {
+            const pGeo = new THREE.BoxGeometry(20,20,20);
+            const pMat = new THREE.MeshBasicMaterial({color: 0xff4400});
+            for (let i = 0; i < 6; i++) {
+                const p = new THREE.Mesh(pGeo, pMat);
+                p.position.copy(pos);
+                p.userData.v = new THREE.Vector3((Math.random()-0.5)*40, (Math.random()-0.5)*40, (Math.random()-0.5)*40);
+                p.userData.life = 1.0;
+                scene.add(p);
+                game.particles.push(p);
+            }
+        }
 
-        function checkHits() {
-            const now = Date.now();
-            if (now < game.hitCool) return;
-            _rayDir.set(0,0,-1).applyQuaternion(game.plane.quaternion);
-            raycaster.set(game.plane.position, _rayDir);
-            raycaster.far = 180;
-            const hits = game.mountain ? raycaster.intersectObject(game.mountain, true) : [];
-            const distToCenter = game.plane.position.distanceTo(game.mountainPos);
-            const tooLow = game.plane.position.y < -100;
-            if (hits.length > 0 || distToCenter > game.boundary || tooLow) {
-                explode(game.plane.position);
-                game.hitCool = now + 1200;
-                game.vel = -3; 
-                _v1.set(0, 0, 500).applyQuaternion(game.plane.quaternion);
-                game.plane.position.add(_v1);
-            }
-        }
+        function checkHits() {
+            const now = Date.now();
+            if (now < game.hitCool) return;
+            _rayDir.set(0,0,-1).applyQuaternion(game.plane.quaternion);
+            raycaster.set(game.plane.position, _rayDir);
+            raycaster.far = 180;
+            const hits = game.mountain ? raycaster.intersectObject(game.mountain, true) : [];
+            const distToCenter = game.plane.position.distanceTo(game.mountainPos);
+            const tooLow = game.plane.position.y < -100;
+            if (hits.length > 0 || distToCenter > game.boundary || tooLow) {
+                explode(game.plane.position);
+                game.hitCool = now + 1200;
+                game.vel = -3; 
+                _v1.set(0, 0, 500).applyQuaternion(game.plane.quaternion);
+                game.plane.position.add(_v1);
+            }
+        }
 
-        document.getElementById('start-btn').onclick = () => {
-            document.getElementById('overlay').style.display = 'none';
-            if ('ontouchstart' in window) document.querySelectorAll('.mobile-ctrl').forEach(e => e.style.display = 'block');
-            loader.load('korean_air.glb', (gltf) => {
-                game.model = gltf.scene;
-                game.model.scale.set(9, 9, 9);
-                game.model.rotation.y = Math.PI;
-                game.plane.add(game.model);
-            });
-            game.plane.position.set(0, 1600, 1500);
-            game.started = true;
-            game.startTime = Date.now();
-        };
+        document.getElementById('start-btn').onclick = () => {
+            document.getElementById('overlay').style.display = 'none';
+            if ('ontouchstart' in window) document.querySelectorAll('.mobile-ctrl').forEach(e => e.style.display = 'block');
+            loader.load('korean_air.glb', (gltf) => {
+                game.model = gltf.scene;
+                game.model.scale.set(9, 9, 9);
+                game.model.rotation.y = Math.PI;
+                game.plane.add(game.model);
+            });
+            game.plane.position.set(0, 1600, 1500);
+            game.started = true;
+            game.startTime = Date.now();
+        };
 
-        const handleKey = (e, val) => {
-            const k = e.key.toLowerCase();
-            if(k==='w') game.keys.w = val; if(k==='s') game.keys.s = val;
-            if(k==='a') game.keys.a = val; if(k==='d') game.keys.d = val;
-            if(e.code==='Space') game.keys.space = val;
-        };
-        window.onkeydown = (e) => handleKey(e, true);
-        window.onkeyup = (e) => handleKey(e, false);
+        const handleKey = (e, val) => {
+            const k = e.key.toLowerCase();
+            if(k==='w') game.keys.w = val; if(k==='s') game.keys.s = val;
+            if(k==='a') game.keys.a = val; if(k==='d') game.keys.d = val;
+            if(e.code==='Space') game.keys.space = val;
+        };
+        window.onkeydown = (e) => handleKey(e, true);
+        window.onkeyup = (e) => handleKey(e, false);
 
-        const mBind = (id, k) => {
-            const el = document.getElementById(id);
-            el.ontouchstart = (e) => { e.preventDefault(); game.keys[k] = true; };
-            el.ontouchend = (e) => { e.preventDefault(); game.keys[k] = false; };
-        };
-        mBind('m-up', 'w'); mBind('m-down', 's'); mBind('m-left', 'a'); mBind('m-right', 'd');
-        mBind('m-boost', 'space');
+        const mBind = (id, k) => {
+            const el = document.getElementById(id);
+            el.ontouchstart = (e) => { e.preventDefault(); game.keys[k] = true; };
+            el.ontouchend = (e) => { e.preventDefault(); game.keys[k] = false; };
+        };
+        mBind('m-up', 'w'); mBind('m-down', 's'); mBind('m-left', 'a'); mBind('m-right', 'd');
+        mBind('m-boost', 'space');
 
-        let frame = 0;
-        function animate() {
-            requestAnimationFrame(animate);
-            if (!game.started) return;
-            frame++;
-            const now = Date.now();
-            const sec = Math.floor((now - game.startTime)/1000);
-            if(game.lastSec !== sec) {
-                document.getElementById('timer-display').textContent = sec;
-                game.lastSec = sec;
-            }
-
-            // 1. 속도 설정
-            game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
-
-            // 2. 좌우 회전 (Yaw) - rotateY 사용
-            const tTurn = game.keys.a ? 0.03 : (game.keys.d ? -0.03 : 0);
-            game.turnVel = THREE.MathUtils.lerp(game.turnVel, tTurn, 0.1);
-            game.plane.rotateY(game.turnVel);
-
-            // 3. 상하 회전 (Pitch) - rotateX 사용
-            // W 누르면 기수 다운(내려감), S 누르면 기수 업(올라감)
-            const tPitch = game.keys.w ? 0.025 : (game.keys.s ? -0.025 : 0);
-            game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, tPitch, 0.1);
-            game.plane.rotateX(game.pitchVel);
-
-            // 4. 전진 - translateZ 사용 (비행기가 보는 방향으로 무조건 전진)
-            game.plane.translateZ(-game.vel * 4.5);
-
-            // 모델 시각적 효과 (회전할 때 기우뚱)
-            if (game.model) {
-                game.model.rotation.z = THREE.MathUtils.lerp(game.model.rotation.z, game.turnVel * 20, 0.1);
-            }
-
-            if (frame % 6 === 0) checkHits();
-            const target = game.cpPos[game.currentCP];
-            const d = game.plane.position.distanceTo(target);
-            game.cpRings.forEach((r, i) => r.visible = (i === game.currentCP));
-            if (d < 500) {
-                game.currentCP++;
-                if (game.currentCP >= 3) {
-                    game.started = false;
-                    document.getElementById('final-time').textContent = sec;
-                    document.getElementById('result-screen').style.display = 'flex';
-                }
-            }
-            _v1.subVectors(target, game.plane.position).normalize();
-            _v2.set(0,0,-1).applyQuaternion(game.plane.quaternion);
-            const angle = Math.atan2(_v1.x, _v1.z) - Math.atan2(_v2.x, _v2.z);
-            document.getElementById('arrow-svg').style.transform = `rotate(${angle * 57.3}deg)`;
-            document.getElementById('m-val').textContent = Math.round(d);
-            document.getElementById('cp-num').textContent = `CP ${game.currentCP+1}/3`;
-            
-            for (let i = game.particles.length-1; i>=0; i--) {
-                const p = game.particles[i];
-                p.position.add(p.userData.v);
-                p.userData.life -= 0.02;
-                p.scale.setScalar(p.userData.life);
-                if (p.userData.life <= 0) { scene.remove(p); game.particles.splice(i,1); }
-            }
-
-            // 카메라 위치 설정 (비행기 뒤쪽 상단 고정)
-            _v3.set(0, 65, 380).applyQuaternion(game.plane.quaternion).add(game.plane.position);
-            camera.position.lerp(_v3, 0.08);
-            camera.lookAt(game.plane.position);
-            renderer.render(scene, camera);
-        }
-        animate();
-        window.onresize = () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        };
-    </script>
+        let frame = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!game.started) return;
+            frame++;
+            const now = Date.now();
+            const sec = Math.floor((now - game.startTime)/1000);
+            if(game.lastSec !== sec) {
+                document.getElementById('timer-display').textContent = sec;
+                game.lastSec = sec;
+            }
+            game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
+            const tTurn = game.keys.a ? 0.035 : (game.keys.d ? -0.035 : 0);
+            game.turnVel = THREE.MathUtils.lerp(game.turnVel, tTurn, 0.1);
+            game.plane.rotation.y += game.turnVel;
+            game.plane.rotation.z = THREE.MathUtils.lerp(game.plane.rotation.z, game.turnVel * 25, 0.1);
+            const tPitch = game.keys.w ? -0.55 : (game.keys.s ? 0.55 : 0);
+            game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, tPitch, 0.08);
+            game.plane.rotation.x = game.pitchVel;
+            game.plane.translateZ(-game.vel * 4.5);
+            game.plane.position.y += (-game.pitchVel * game.vel * 1.5);
+            if (frame % 6 === 0) checkHits();
+            const target = game.cpPos[game.currentCP];
+            const d = game.plane.position.distanceTo(target);
+            game.cpRings.forEach((r, i) => r.visible = (i === game.currentCP));
+            if (d < 500) {
+                game.currentCP++;
+                if (game.currentCP >= 3) {
+                    game.started = false;
+                    document.getElementById('final-time').textContent = sec;
+                    document.getElementById('result-screen').style.display = 'flex';
+                }
+            }
+            _v1.subVectors(target, game.plane.position).normalize();
+            _v2.set(0,0,-1).applyQuaternion(game.plane.quaternion);
+            const angle = Math.atan2(_v1.x, _v1.z) - Math.atan2(_v2.x, _v2.z);
+            document.getElementById('arrow-svg').style.transform = `rotate(${angle * 57.3}deg)`;
+            document.getElementById('m-val').textContent = Math.round(d);
+            document.getElementById('cp-num').textContent = `CP ${game.currentCP+1}/3`;
+            for (let i = game.particles.length-1; i>=0; i--) {
+                const p = game.particles[i];
+                p.position.add(p.userData.v);
+                p.userData.life -= 0.02;
+                p.scale.setScalar(p.userData.life);
+                if (p.userData.life <= 0) { scene.remove(p); game.particles.splice(i,1); }
+            }
+            _v3.set(0, 65, 380).applyQuaternion(game.plane.quaternion).add(game.plane.position);
+            camera.position.lerp(_v3, 0.08);
+            camera.lookAt(game.plane.position);
+            renderer.render(scene, camera);
+        }
+        animate();
+        window.onresize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+    </script>
 </body>
 </html>
