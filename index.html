@@ -23,13 +23,22 @@
         .btn-boost { width: 90px; height: 90px; background: #ff4500; border: 4px solid #fff; border-radius: 50%; color: white; font-weight: bold; display: flex; justify-content: center; align-items: center; }
         #overlay { position: absolute; width:100%; height:100%; background:rgba(0,0,0,0.9); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100; color:white; }
         #start-btn { padding: 20px 60px; background: #1e90ff; color: white; border: none; border-radius: 50px; font-size: 22px; cursor: pointer; }
+        #loading-img { 
+            width: 260px; 
+            height: 260px; 
+            object-fit: cover; 
+            border-radius: 30px; 
+            margin-bottom: 25px; 
+            border: 4px solid #1e90ff; 
+            box-shadow: 0 0 25px rgba(30,144,255,0.5); 
+}
     </style>
 </head>
 <body>
 
     <div id="overlay">
         <h1>성산일출봉 A380 투어링</h1>
-        <p id="loading-txt">최적화 로딩 중...</p>
+        <img src="flyjeju.png" id="loading-img"> <p id="loading-txt">맵 로딩 중...</p>
         <button id="start-btn" style="display:none">비행 시작</button>
     </div>
 
