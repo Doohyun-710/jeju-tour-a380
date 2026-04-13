@@ -108,14 +108,14 @@
         };
 
         const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _rayDir = new THREE.Vector3();
-        const _axisX = new THREE.Vector3(1, 0, 0); // 로컬 X축 (Pitch용)
-        const _axisY = new THREE.Vector3(0, 1, 0); // 로컬 Y축 (Yaw용)
+        const _axisX = new THREE.Vector3(1, 0, 0); 
+        const _axisY = new THREE.Vector3(0, 1, 0); 
         const raycaster = new THREE.Raycaster();
 
         function getRandomPos() {
-            const h = 1400 + Math.random() * 1000; 
-            const x = (Math.random() * 2000 + 3500) * (Math.random() > 0.5 ? 1 : -1); 
-            const z = -(Math.random() * 3500 + 4000); 
+            const h = 1400 + Math.random() * 800; 
+            const x = (Math.random() * 2000 + 3000) * (Math.random() > 0.5 ? 1 : -1); 
+            const z = -(Math.random() * 3000 + 3500); 
             return new THREE.Vector3(x, h, z);
         }
         for (let i = 0; i < 3; i++) game.cpPos.push(getRandomPos());
@@ -147,7 +147,7 @@
             for (let i = 0; i < 25; i++) {
                 const p = new THREE.Mesh(pGeo, pMat);
                 p.position.copy(pos);
-                p.userData.v = new THREE.Vector3((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
+                p.userData.v = new THREE.Vector3((Math.random()-0.5)*120, (Math.random()-0.5)*120, (Math.random()-0.5)*120);
                 p.userData.life = 1.0;
                 scene.add(p);
                 game.particles.push(p);
@@ -164,7 +164,7 @@
             game.isCrashed = false;
             if(game.model) {
                 game.model.visible = true;
-                game.model.rotation.set(0, Math.PI, 0); // 모델 기본 방향 정렬
+                game.model.rotation.set(0, Math.PI, 0);
             }
             
             _v3.set(0, 65, 380).applyQuaternion(game.plane.quaternion).add(game.plane.position);
@@ -176,12 +176,14 @@
             const now = Date.now();
             if (now < game.hitCool || game.isCrashed) return;
 
+            // 정면 충돌 체크 거리 단축 (120으로 수정하여 허공 터짐 방지)
             _rayDir.set(0,0,-1).applyQuaternion(game.plane.quaternion);
             raycaster.set(game.plane.position, _rayDir);
-            raycaster.far = 200;
+            raycaster.far = 120; 
             
+            // 산(mountain)하고만 충돌 체크 (고리는 무시)
             const hits = game.mountain ? raycaster.intersectObject(game.mountain, true) : [];
-            const tooLow = game.plane.position.y < -100;
+            const tooLow = game.plane.position.y < -300; // 고도 제한 완화
             const distFromOrigin = game.plane.position.length();
             const outOfBounds = distFromOrigin > game.boundary;
 
@@ -190,7 +192,7 @@
                 if(game.model) game.model.visible = false;
                 const crashPos = game.plane.position.clone();
                 explode(crashPos); 
-                game.hitCool = now + 2500; 
+                game.hitCool = now + 2000; 
                 setTimeout(resetPlane, 1000);
             }
         }
@@ -239,25 +241,22 @@
             }
 
             if (!game.isCrashed) {
-                // 속도 조절
-                game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
+                game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 18 : 8, 0.05);
 
-                // 상하 조작 (Pitch): 비행기 로컬 X축 기준 회전
-                const pitchTarget = game.keys.w ? 0.025 : (game.keys.s ? -0.025 : 0);
-                game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, pitchTarget, 0.1);
-                game.plane.rotateOnAxis(_axisX, game.pitchVel);
+                // 상하/좌우 동시 조작을 위해 독립적으로 rotateOnAxis 호출 (감도 상향)
+                const pitchTarget = game.keys.w ? 0.045 : (game.keys.s ? -0.045 : 0);
+                game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, pitchTarget, 0.15);
+                if (Math.abs(game.pitchVel) > 0.001) game.plane.rotateOnAxis(_axisX, game.pitchVel);
 
-                // 좌우 조작 (Yaw): 비행기 로컬 Y축 기준 회전
-                const turnTarget = game.keys.a ? 0.03 : (game.keys.d ? -0.03 : 0);
-                game.turnVel = THREE.MathUtils.lerp(game.turnVel, turnTarget, 0.1);
-                game.plane.rotateOnAxis(_axisY, game.turnVel);
+                const turnTarget = game.keys.a ? 0.05 : (game.keys.d ? -0.05 : 0);
+                game.turnVel = THREE.MathUtils.lerp(game.turnVel, turnTarget, 0.15);
+                if (Math.abs(game.turnVel) > 0.001) game.plane.rotateOnAxis(_axisY, game.turnVel);
 
-                // 모델 뱅킹(Banking) 효과: 비행기 방향에 따라 모델만 살짝 기울이기
                 if(game.model) {
-                    game.model.rotation.z = THREE.MathUtils.lerp(game.model.rotation.z, game.turnVel * 15, 0.1);
+                    // 좌우 회전 시 모델이 더 크게 기울어지도록 뱅킹 효과 강화
+                    game.model.rotation.z = THREE.MathUtils.lerp(game.model.rotation.z, game.turnVel * 12, 0.1);
                 }
 
-                // 이동: 비행기가 바라보는 방향(Z축)으로 전진
                 _v1.set(0, 0, -1).applyQuaternion(game.plane.quaternion); 
                 game.plane.position.addScaledVector(_v1, game.vel * 4.5);
             }
@@ -268,7 +267,8 @@
             const d = game.plane.position.distanceTo(target);
             game.cpRings.forEach((r, i) => r.visible = (i === game.currentCP && !game.isCrashed));
             
-            if (d < 500 && !game.isCrashed) {
+            // 체크포인트 통과 (거리 600으로 넉넉하게 조정)
+            if (d < 600 && !game.isCrashed) {
                 game.currentCP++;
                 if (game.currentCP >= 3) {
                     game.started = false;
@@ -294,9 +294,8 @@
                 if (p.userData.life <= 0) { scene.remove(p); game.particles.splice(i,1); }
             }
 
-            // 카메라 추적
-            _v3.set(0, 65, 380).applyQuaternion(game.plane.quaternion).add(game.plane.position);
-            camera.position.lerp(_v3, 0.1);
+            _v3.set(0, 70, 420).applyQuaternion(game.plane.quaternion).add(game.plane.position);
+            camera.position.lerp(_v3, 0.12);
             camera.lookAt(game.plane.position);
             renderer.render(scene, camera);
         }
