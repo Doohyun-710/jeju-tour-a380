@@ -31,14 +31,14 @@
     <div id="overlay">
         <h1>성산일출봉 A380 투어링</h1>
         <img src="flyjeju.png" id="loading-img" alt="메인 이미지">
-        <p id="loading-txt">맵 로딩 중...</p>
+        <p id="loading-txt">모델 및 맵 로딩 중...</p>
         <button id="start-btn" style="display:none">비행 시작</button>
     </div>
 
     <div id="result-screen">
         <h1 style="font-size: 50px; color: #ffeb3b; margin: 0;">MISSION COMPLETE!</h1>
         <p style="font-size: 24px; color: #fff; margin: 10px 0;">최종 기록: <span id="final-time" style="color:#00ff00">0</span>s</p>
-        <button class="retry-btn" onclick="location.reload()">다시 비행하기</button>
+        <button class="retry-btn" id="retry-action">즉시 다시 비행하기</button>
     </div>
 
     <div id="ui-layer">
@@ -101,7 +101,7 @@
             particles: [],
             mountainPos: new THREE.Vector3(0, -300, -4500),
             cpPos: [], cpRings: [], currentCP: 0,
-            boundary: 15000, 
+            boundary: 15000,
             hitCool: 0,
             startPos: new THREE.Vector3(0, 1600, 1500),
             isCrashed: false 
@@ -112,34 +112,56 @@
         const _axisY = new THREE.Vector3(0, 1, 0); 
         const raycaster = new THREE.Raycaster();
 
-        function getRandomPos() {
-            const h = 1400 + Math.random() * 800; 
-            const x = (Math.random() * 2000 + 3000) * (Math.random() > 0.5 ? 1 : -1); 
-            const z = -(Math.random() * 3000 + 3500); 
-            return new THREE.Vector3(x, h, z);
+        // 체크포인트 위치 생성
+        function generateCPs() {
+            game.cpPos = [];
+            for (let i = 0; i < 3; i++) {
+                const h = 1400 + Math.random() * 800; 
+                const x = (Math.random() * 2000 + 3000) * (Math.random() > 0.5 ? 1 : -1); 
+                const z = -(Math.random() * 3000 + 3500); 
+                game.cpPos.push(new THREE.Vector3(x, h, z));
+            }
         }
-        for (let i = 0; i < 3; i++) game.cpPos.push(getRandomPos());
+        generateCPs();
         scene.add(game.plane);
 
         const loader = new GLTFLoader();
+        
+        // 1. 산 로드
         loader.load('seongsan.glb', (gltf) => {
             game.mountain = gltf.scene;
             game.mountain.position.copy(game.mountainPos);
             game.mountain.scale.set(135, 135, 135); 
             scene.add(game.mountain);
-            document.getElementById('loading-txt').style.display = 'none';
-            document.getElementById('start-btn').style.display = 'block';
+            
+            // 2. 비행기 로드 (산 로드 직후 바로 시작)
+            loader.load('korean_air.glb', (planeGltf) => {
+                game.model = planeGltf.scene;
+                game.model.scale.set(9, 9, 9);
+                game.model.rotation.y = Math.PI;
+                game.plane.add(game.model);
+                
+                // 로딩 완료 UI 변경
+                document.getElementById('loading-txt').style.display = 'none';
+                document.getElementById('start-btn').style.display = 'block';
+            });
         });
 
         const ringGeo = new THREE.TorusGeometry(350, 20, 8, 20);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.6 });
-        game.cpPos.forEach(pos => {
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.position.copy(pos);
-            ring.visible = false;
-            scene.add(ring);
-            game.cpRings.push(ring);
-        });
+        
+        function updateRings() {
+            game.cpRings.forEach(r => scene.remove(r));
+            game.cpRings = [];
+            game.cpPos.forEach(pos => {
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.position.copy(pos);
+                ring.visible = false;
+                scene.add(ring);
+                game.cpRings.push(ring);
+            });
+        }
+        updateRings();
 
         function explode(pos) {
             const pGeo = new THREE.BoxGeometry(30, 30, 30);
@@ -154,17 +176,25 @@
             }
         }
 
-        function resetPlane() {
+        function resetPlane(hardReset = false) {
             game.plane.position.copy(game.startPos);
             game.plane.quaternion.set(0, 0, 0, 1);
             game.vel = 0;
             game.turnVel = 0;
             game.pitchVel = 0;
-            game.currentCP = 0;
             game.isCrashed = false;
+            
             if(game.model) {
                 game.model.visible = true;
                 game.model.rotation.set(0, Math.PI, 0);
+            }
+
+            if(hardReset) {
+                game.currentCP = 0;
+                game.startTime = Date.now();
+                game.lastSec = -1;
+                generateCPs(); // 매 판마다 체크포인트 위치 랜덤화
+                updateRings();
             }
             
             _v3.set(0, 65, 380).applyQuaternion(game.plane.quaternion).add(game.plane.position);
@@ -172,18 +202,23 @@
             camera.lookAt(game.plane.position);
         }
 
+        // 게임 완전 재시작 함수 (로딩창 없이)
+        function gameRestart() {
+            document.getElementById('result-screen').style.display = 'none';
+            resetPlane(true);
+            game.started = true;
+        }
+
         function checkHits() {
             const now = Date.now();
             if (now < game.hitCool || game.isCrashed) return;
 
-            // 정면 충돌 체크
             _rayDir.set(0,0,-1).applyQuaternion(game.plane.quaternion);
             raycaster.set(game.plane.position, _rayDir);
-            raycaster.far = 80; // 거리를 조금 더 줄여서 아주 정밀하게 산에 닿을 때만 터지게 수정
+            raycaster.far = 85; 
             
-            // ★ 중요: 고리가 아닌 "산(mountain)"만 충돌 체크 대상으로 지정
             const hits = game.mountain ? raycaster.intersectObject(game.mountain, true) : [];
-            const tooLow = game.plane.position.y < -400; 
+            const tooLow = game.plane.position.y < -500; 
             const distFromOrigin = game.plane.position.length();
             const outOfBounds = distFromOrigin > game.boundary;
 
@@ -193,23 +228,18 @@
                 const crashPos = game.plane.position.clone();
                 explode(crashPos); 
                 game.hitCool = now + 2000; 
-                setTimeout(resetPlane, 1000);
+                setTimeout(() => resetPlane(false), 1000);
             }
         }
 
         document.getElementById('start-btn').onclick = () => {
             document.getElementById('overlay').style.display = 'none';
             if ('ontouchstart' in window) document.querySelectorAll('.mobile-ctrl').forEach(e => e.style.display = 'block');
-            loader.load('korean_air.glb', (gltf) => {
-                game.model = gltf.scene;
-                game.model.scale.set(9, 9, 9);
-                game.model.rotation.y = Math.PI;
-                game.plane.add(game.model);
-            });
-            resetPlane();
+            resetPlane(true);
             game.started = true;
-            game.startTime = Date.now();
         };
+
+        document.getElementById('retry-action').onclick = gameRestart;
 
         const handleKey = (e, val) => {
             const k = e.key.toLowerCase();
@@ -243,7 +273,6 @@
             if (!game.isCrashed) {
                 game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 18 : 8, 0.05);
 
-                // 감도 높은 상하/좌우 동시 조작
                 const pitchTarget = game.keys.w ? 0.045 : (game.keys.s ? -0.045 : 0);
                 game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, pitchTarget, 0.15);
                 if (Math.abs(game.pitchVel) > 0.001) game.plane.rotateOnAxis(_axisX, game.pitchVel);
@@ -266,7 +295,6 @@
             const d = game.plane.position.distanceTo(target);
             game.cpRings.forEach((r, i) => r.visible = (i === game.currentCP && !game.isCrashed));
             
-            // 체크포인트 통과 거리 (600m)
             if (d < 600 && !game.isCrashed) {
                 game.currentCP++;
                 if (game.currentCP >= 3) {
