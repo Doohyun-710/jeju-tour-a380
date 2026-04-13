@@ -176,14 +176,14 @@
             const now = Date.now();
             if (now < game.hitCool || game.isCrashed) return;
 
-            // 정면 충돌 체크 거리 단축 (120으로 수정하여 허공 터짐 방지)
+            // 정면 충돌 체크
             _rayDir.set(0,0,-1).applyQuaternion(game.plane.quaternion);
             raycaster.set(game.plane.position, _rayDir);
-            raycaster.far = 120; 
+            raycaster.far = 80; // 거리를 조금 더 줄여서 아주 정밀하게 산에 닿을 때만 터지게 수정
             
-            // 산(mountain)하고만 충돌 체크 (고리는 무시)
+            // ★ 중요: 고리가 아닌 "산(mountain)"만 충돌 체크 대상으로 지정
             const hits = game.mountain ? raycaster.intersectObject(game.mountain, true) : [];
-            const tooLow = game.plane.position.y < -300; // 고도 제한 완화
+            const tooLow = game.plane.position.y < -400; 
             const distFromOrigin = game.plane.position.length();
             const outOfBounds = distFromOrigin > game.boundary;
 
@@ -243,7 +243,7 @@
             if (!game.isCrashed) {
                 game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 18 : 8, 0.05);
 
-                // 상하/좌우 동시 조작을 위해 독립적으로 rotateOnAxis 호출 (감도 상향)
+                // 감도 높은 상하/좌우 동시 조작
                 const pitchTarget = game.keys.w ? 0.045 : (game.keys.s ? -0.045 : 0);
                 game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, pitchTarget, 0.15);
                 if (Math.abs(game.pitchVel) > 0.001) game.plane.rotateOnAxis(_axisX, game.pitchVel);
@@ -253,7 +253,6 @@
                 if (Math.abs(game.turnVel) > 0.001) game.plane.rotateOnAxis(_axisY, game.turnVel);
 
                 if(game.model) {
-                    // 좌우 회전 시 모델이 더 크게 기울어지도록 뱅킹 효과 강화
                     game.model.rotation.z = THREE.MathUtils.lerp(game.model.rotation.z, game.turnVel * 12, 0.1);
                 }
 
@@ -267,7 +266,7 @@
             const d = game.plane.position.distanceTo(target);
             game.cpRings.forEach((r, i) => r.visible = (i === game.currentCP && !game.isCrashed));
             
-            // 체크포인트 통과 (거리 600으로 넉넉하게 조정)
+            // 체크포인트 통과 거리 (600m)
             if (d < 600 && !game.isCrashed) {
                 game.currentCP++;
                 if (game.currentCP >= 3) {
