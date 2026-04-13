@@ -102,7 +102,8 @@
             mountainPos: new THREE.Vector3(0, -300, -4500),
             cpPos: [], cpRings: [], currentCP: 0,
             boundary: 15000, hitCool: 0,
-            startPos: new THREE.Vector3(0, 1600, 1500)
+            startPos: new THREE.Vector3(0, 1600, 1500),
+            isCrashed: false // 충돌 중인지 상태값 추가
         };
 
         const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _rayDir = new THREE.Vector3();
@@ -138,13 +139,12 @@
         });
 
         function explode(pos) {
-            const pGeo = new THREE.BoxGeometry(25, 25, 25);
-            const pMat = new THREE.MeshBasicMaterial({color: 0xffaa00});
-            // 파편 20개로 더 화끈하게 늘림
-            for (let i = 0; i < 20; i++) {
+            const pGeo = new THREE.BoxGeometry(30, 30, 30);
+            const pMat = new THREE.MeshBasicMaterial({color: 0xff6600});
+            for (let i = 0; i < 25; i++) {
                 const p = new THREE.Mesh(pGeo, pMat);
-                p.position.copy(pos); // 충돌한 바로 그 지점
-                p.userData.v = new THREE.Vector3((Math.random()-0.5)*80, (Math.random()-0.5)*80, (Math.random()-0.5)*80);
+                p.position.copy(pos);
+                p.userData.v = new THREE.Vector3((Math.random()-0.5)*100, (Math.random()-0.5)*100, (Math.random()-0.5)*100);
                 p.userData.life = 1.0;
                 scene.add(p);
                 game.particles.push(p);
@@ -152,18 +152,16 @@
         }
 
         function resetPlane() {
-            // 위치와 회전 즉시 초기화
             game.plane.position.copy(game.startPos);
             game.plane.quaternion.set(0, 0, 0, 1);
             game.plane.rotation.set(0, 0, 0);
-            
-            // 모든 물리/속도 변수 0으로 박멸
             game.vel = 0;
             game.turnVel = 0;
             game.pitchVel = 0;
             game.currentCP = 0;
-
-            // 카메라가 순간이동을 따라가도록 강제 설정
+            game.isCrashed = false; // 리셋 완료 후 비행 가능 상태로
+            if(game.model) game.model.visible = true; // 비행기 다시 보이게 함
+            
             _v3.set(0, 65, 380).applyQuaternion(game.plane.quaternion).add(game.plane.position);
             camera.position.copy(_v3);
             camera.lookAt(game.plane.position);
@@ -171,7 +169,7 @@
 
         function checkHits() {
             const now = Date.now();
-            if (now < game.hitCool) return;
+            if (now < game.hitCool || game.isCrashed) return;
 
             _rayDir.set(0,0,-1).applyQuaternion(game.plane.quaternion);
             raycaster.set(game.plane.position, _rayDir);
@@ -182,12 +180,18 @@
             const outOfBounds = Math.abs(game.plane.position.x) > game.boundary || Math.abs(game.plane.position.z) > game.boundary;
 
             if (hits.length > 0 || tooLow || outOfBounds) {
-                // 중요: 초기화 전에 현재 위치 저장해서 파편 터뜨리기
+                game.isCrashed = true; // 충돌 상태 돌입
+                if(game.model) game.model.visible = false; // 비행기 숨김
+                
                 const crashPos = game.plane.position.clone();
                 explode(crashPos); 
 
-                game.hitCool = now + 1500; // 1.5초 무적
-                resetPlane(); 
+                game.hitCool = now + 2500; 
+
+                // 1초(1000ms) 뒤에 초기 위치로 이동시킴
+                setTimeout(() => {
+                    resetPlane();
+                }, 1000);
             }
         }
 
@@ -235,27 +239,29 @@
                 game.lastSec = sec;
             }
 
-            // 부드러운 이동 제어 (물리 값 반영)
-            game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
-            const tTurn = game.keys.a ? 0.035 : (game.keys.d ? -0.035 : 0);
-            game.turnVel = THREE.MathUtils.lerp(game.turnVel, tTurn, 0.1);
-            game.plane.rotation.y += game.turnVel;
-            
-            const tPitch = game.keys.w ? -0.6 : (game.keys.s ? 0.6 : 0);
-            game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, tPitch, 0.08);
-            game.plane.rotation.x = game.pitchVel;
-            game.plane.rotation.z = THREE.MathUtils.lerp(game.plane.rotation.z, game.turnVel * 20, 0.1);
+            // 충돌 중이 아닐 때만 이동 로직 작동
+            if (!game.isCrashed) {
+                game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
+                const tTurn = game.keys.a ? 0.035 : (game.keys.d ? -0.035 : 0);
+                game.turnVel = THREE.MathUtils.lerp(game.turnVel, tTurn, 0.1);
+                game.plane.rotation.y += game.turnVel;
+                
+                const tPitch = game.keys.w ? -0.6 : (game.keys.s ? 0.6 : 0);
+                game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, tPitch, 0.08);
+                game.plane.rotation.x = game.pitchVel;
+                game.plane.rotation.z = THREE.MathUtils.lerp(game.plane.rotation.z, game.turnVel * 20, 0.1);
 
-            _v1.set(0, 0, -1).applyQuaternion(game.plane.quaternion); 
-            game.plane.position.addScaledVector(_v1, game.vel * 4.5);
+                _v1.set(0, 0, -1).applyQuaternion(game.plane.quaternion); 
+                game.plane.position.addScaledVector(_v1, game.vel * 4.5);
+            }
 
             if (frame % 5 === 0) checkHits();
             
             const target = game.cpPos[game.currentCP];
             const d = game.plane.position.distanceTo(target);
-            game.cpRings.forEach((r, i) => r.visible = (i === game.currentCP));
+            game.cpRings.forEach((r, i) => r.visible = (i === game.currentCP && !game.isCrashed));
             
-            if (d < 500) {
+            if (d < 500 && !game.isCrashed) {
                 game.currentCP++;
                 if (game.currentCP >= 3) {
                     game.started = false;
@@ -273,7 +279,6 @@
             }
             document.getElementById('cp-num').textContent = `CP ${game.currentCP+1}/3`;
             
-            // 파편 애니메이션 (화면 어디서든 업데이트 되도록)
             for (let i = game.particles.length-1; i>=0; i--) {
                 const p = game.particles[i];
                 p.position.add(p.userData.v);
