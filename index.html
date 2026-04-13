@@ -101,12 +101,15 @@
             particles: [],
             mountainPos: new THREE.Vector3(0, -300, -4500),
             cpPos: [], cpRings: [], currentCP: 0,
-            boundary: 10000, hitCool: 0,
+            boundary: 6000, 
+            hitCool: 0,
             startPos: new THREE.Vector3(0, 1600, 1500),
-            isCrashed: false // 충돌 중인지 상태값 추가
+            isCrashed: false 
         };
 
         const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3(), _rayDir = new THREE.Vector3();
+        const _axisX = new THREE.Vector3(1, 0, 0); // 로컬 X축 (Pitch용)
+        const _axisY = new THREE.Vector3(0, 1, 0); // 로컬 Y축 (Yaw용)
         const raycaster = new THREE.Raycaster();
 
         function getRandomPos() {
@@ -154,13 +157,15 @@
         function resetPlane() {
             game.plane.position.copy(game.startPos);
             game.plane.quaternion.set(0, 0, 0, 1);
-            game.plane.rotation.set(0, 0, 0);
             game.vel = 0;
             game.turnVel = 0;
             game.pitchVel = 0;
             game.currentCP = 0;
-            game.isCrashed = false; // 리셋 완료 후 비행 가능 상태로
-            if(game.model) game.model.visible = true; // 비행기 다시 보이게 함
+            game.isCrashed = false;
+            if(game.model) {
+                game.model.visible = true;
+                game.model.rotation.set(0, Math.PI, 0); // 모델 기본 방향 정렬
+            }
             
             _v3.set(0, 65, 380).applyQuaternion(game.plane.quaternion).add(game.plane.position);
             camera.position.copy(_v3);
@@ -177,21 +182,16 @@
             
             const hits = game.mountain ? raycaster.intersectObject(game.mountain, true) : [];
             const tooLow = game.plane.position.y < -100;
-            const outOfBounds = Math.abs(game.plane.position.x) > game.boundary || Math.abs(game.plane.position.z) > game.boundary;
+            const distFromOrigin = game.plane.position.length();
+            const outOfBounds = distFromOrigin > game.boundary;
 
             if (hits.length > 0 || tooLow || outOfBounds) {
-                game.isCrashed = true; // 충돌 상태 돌입
-                if(game.model) game.model.visible = false; // 비행기 숨김
-                
+                game.isCrashed = true;
+                if(game.model) game.model.visible = false;
                 const crashPos = game.plane.position.clone();
                 explode(crashPos); 
-
                 game.hitCool = now + 2500; 
-
-                // 1초(1000ms) 뒤에 초기 위치로 이동시킴
-                setTimeout(() => {
-                    resetPlane();
-                }, 1000);
+                setTimeout(resetPlane, 1000);
             }
         }
 
@@ -227,11 +227,10 @@
         mBind('m-up', 'w'); mBind('m-down', 's'); mBind('m-left', 'a'); mBind('m-right', 'd');
         mBind('m-boost', 'space');
 
-        let frame = 0;
         function animate() {
             requestAnimationFrame(animate);
             if (!game.started) return;
-            frame++;
+            
             const now = Date.now();
             const sec = Math.floor((now - game.startTime)/1000);
             if(game.lastSec !== sec) {
@@ -239,23 +238,31 @@
                 game.lastSec = sec;
             }
 
-            // 충돌 중이 아닐 때만 이동 로직 작동
             if (!game.isCrashed) {
+                // 속도 조절
                 game.vel = THREE.MathUtils.lerp(game.vel, game.keys.space ? 15 : 7, 0.05);
-                const tTurn = game.keys.a ? 0.035 : (game.keys.d ? -0.035 : 0);
-                game.turnVel = THREE.MathUtils.lerp(game.turnVel, tTurn, 0.1);
-                game.plane.rotation.y += game.turnVel;
-                
-                const tPitch = game.keys.w ? -0.6 : (game.keys.s ? 0.6 : 0);
-                game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, tPitch, 0.08);
-                game.plane.rotation.x = game.pitchVel;
-                game.plane.rotation.z = THREE.MathUtils.lerp(game.plane.rotation.z, game.turnVel * 20, 0.1);
 
+                // 상하 조작 (Pitch): 비행기 로컬 X축 기준 회전
+                const pitchTarget = game.keys.w ? 0.025 : (game.keys.s ? -0.025 : 0);
+                game.pitchVel = THREE.MathUtils.lerp(game.pitchVel, pitchTarget, 0.1);
+                game.plane.rotateOnAxis(_axisX, game.pitchVel);
+
+                // 좌우 조작 (Yaw): 비행기 로컬 Y축 기준 회전
+                const turnTarget = game.keys.a ? 0.03 : (game.keys.d ? -0.03 : 0);
+                game.turnVel = THREE.MathUtils.lerp(game.turnVel, turnTarget, 0.1);
+                game.plane.rotateOnAxis(_axisY, game.turnVel);
+
+                // 모델 뱅킹(Banking) 효과: 비행기 방향에 따라 모델만 살짝 기울이기
+                if(game.model) {
+                    game.model.rotation.z = THREE.MathUtils.lerp(game.model.rotation.z, game.turnVel * 15, 0.1);
+                }
+
+                // 이동: 비행기가 바라보는 방향(Z축)으로 전진
                 _v1.set(0, 0, -1).applyQuaternion(game.plane.quaternion); 
                 game.plane.position.addScaledVector(_v1, game.vel * 4.5);
             }
 
-            if (frame % 5 === 0) checkHits();
+            checkHits();
             
             const target = game.cpPos[game.currentCP];
             const d = game.plane.position.distanceTo(target);
@@ -287,8 +294,9 @@
                 if (p.userData.life <= 0) { scene.remove(p); game.particles.splice(i,1); }
             }
 
+            // 카메라 추적
             _v3.set(0, 65, 380).applyQuaternion(game.plane.quaternion).add(game.plane.position);
-            camera.position.lerp(_v3, 0.08);
+            camera.position.lerp(_v3, 0.1);
             camera.lookAt(game.plane.position);
             renderer.render(scene, camera);
         }
