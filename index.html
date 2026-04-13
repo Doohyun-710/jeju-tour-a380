@@ -113,13 +113,41 @@
         const raycaster = new THREE.Raycaster();
 
         // 체크포인트 위치 생성
+// 체크포인트 위치 생성 (수평 거리 보장 로직 추가)
         function generateCPs() {
             game.cpPos = [];
+            const minDist = 3000; // 체크포인트 간 최소 수평 거리 (원하는 대로 조절 가능)
+        
             for (let i = 0; i < 3; i++) {
-                const h = 1400 + Math.random() * 800; 
-                const x = (Math.random() * 2000 + 3000) * (Math.random() > 0.5 ? 1 : -1); 
-                const z = -(Math.random() * 3000 + 3500); 
-                game.cpPos.push(new THREE.Vector3(x, h, z));
+                let newPos;
+                let isTooClose;
+        
+                do {
+                    isTooClose = false;
+                    // 새로운 랜덤 위치 생성
+                    const h = 1400 + Math.random() * 800;
+                    const x = (Math.random() * 4000 + 2000) * (Math.random() > 0.5 ? 1 : -1);
+                    const z = -(Math.random() * 4000 + 2000);
+                    newPos = new THREE.Vector3(x, h, z);
+        
+                    // 이전 체크포인트(있다면)와 수평 거리(x, z) 비교
+                    if (i > 0) {
+                        const prevPos = game.cpPos[i - 1];
+                        // 수평 거리만 계산하기 위해 y값을 0으로 맞춘 임시 벡터 사용
+                        const horizontalDist = new THREE.Vector2(newPos.x, newPos.z).distanceTo(new THREE.Vector2(prevPos.x, prevPos.z));
+                        
+                        if (horizontalDist < minDist) {
+                            isTooClose = true; // 너무 가까우면 다시 do-while 실행
+                        }
+                    }
+                    
+                    // 시작 지점(0, 0, 1500)과도 너무 가깝지 않게 하려면 아래 코드 추가
+                    const startDist = new THREE.Vector2(newPos.x, newPos.z).distanceTo(new THREE.Vector2(0, 1500));
+                    if (startDist < minDist) isTooClose = true;
+        
+                } while (isTooClose);
+        
+                game.cpPos.push(newPos);
             }
         }
         generateCPs();
